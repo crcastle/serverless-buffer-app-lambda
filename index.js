@@ -48,7 +48,7 @@ exports.handler = function(event, context) {
 };
 
 /**
- * Schedule a tweet to be tweeted at a later time
+ * Schedule a tweet to be posted at a later time
  *
  *  - date: The time at which to post the tweet (in milliseconds since Jan 1 1970 UTC)
  *  - status: The tweet text
@@ -89,6 +89,10 @@ exports.scheduledTweetPost(event, context) {
 
 /**
  * Modifies a previously scheduled but not posted tweet.
+ *
+ *  - oldDate: The previously scheduled time at which the tweet was to be posted (milliseconds since Jan 1 1970)
+ *  - newDate: The updated time at which to post the tweet (milliseconds since Jan 1 1970 UTC)
+ *  - status: The updated tweet text
  */
 exports.scheduledTweetPut(event, context) {
 
@@ -96,6 +100,8 @@ exports.scheduledTweetPut(event, context) {
 
 /**
  * Deletes a previously scheduled but not posted tweet.
+ *
+ *  - date: The time at which the tweet was to be posted (milliseconds since Jan 1 1970)
  */
 exports.scheduledTweetDelete(event, context) {
 
