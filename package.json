@@ -1,0 +1,23 @@
+{
+  "name": "serverless-buffer-app-lambda",
+  "version": "0.1.0",
+  "description": "AWS Lambda functions for serverless-buffer-app-gui",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "zip -r lambda-code.zip index.js config.json node_modules; echo \"*** Now upload lambda-code.zip to AWS Lambda\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/crcastle/serverless-buffer-app-lambda.git"
+  },
+  "author": "Chris Castle",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/crcastle/serverless-buffer-app-lambda/issues"
+  },
+  "homepage": "https://github.com/crcastle/serverless-buffer-app-lambda#readme",
+  "dependencies": {
+    "twitter": "^1.2.5"
+  }
+}
