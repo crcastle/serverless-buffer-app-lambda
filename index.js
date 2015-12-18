@@ -119,4 +119,45 @@ exports.scheduledTweetDelete = function(event, context) {
 
 };
 
+/**
+ * Returns all scheduled tweets to post with a specified time range
+ *
+ *  - fromDate: The post date after which to return scheduled tweets (milliseconds since Jan 1 1970)
+ *  - toDate: The post date before which to return scheduled tweets (milliseconds since Jan 1 1970)
+ */
+exports.scheduledTweetList = function(event, context) {
+  /* GET PARAMETERS */
+  var fromDate = parseInt(event.fromDate);
+  var toDate = parseInt(event.toDate);
+  var account = event.account;
+
+  /* VALIDATE PARAMETERS */
+  if (!fromDate) { return context.fail(new Error('Invalid or missing "fromDate" parameter.')); }
+  if (!toDate) { return context.fail(new Error('Invalid or missing "toDate" parameter.')); }
+  if (toDate < fromDate) { return context.fail(new Error('"toDate" cannot be before "fromDate".')); }
+  if (!account) { return context.fail(new Error('Invalid or missing "account" parameter.')); }
+
+  /* CONSTRUCT DYNAMODB ENTRY */
+  var params = {
+    TableName: 'scheduledTweets',
+    KeyConditionExpression: 'twitterAccount = :account AND postedDate BETWEEN :from AND :to',
+    ExpressionAttributeValues: {
+      ':account': account,
+      ':from': fromDate,
+      ':to': toDate
+    }
+  };
+
+  /* EXECUTE DYNAMODB QUERY */
+  dynamoDbDoc.query(params, function(err, data) {
+    if (err) {
+      console.error(err)
+      return context.fail(new Error('Error getting scheduled tweets.'));
+    }
+
+    console.info('Got list of scheduled tweets from DynamoDB.')
+    return context.succeed(data);
+  });
+};
+
 };
