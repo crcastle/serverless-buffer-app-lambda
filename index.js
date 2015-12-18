@@ -1,6 +1,7 @@
 console.log('Loading function');
 
 var Twitter = require('twitter');
+var AWS = require("aws-sdk");
 var dynamoDbDoc = new AWS.DynamoDB.DocumentClient();
 
 var config = require('./config.json').development;
