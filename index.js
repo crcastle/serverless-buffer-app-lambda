@@ -54,7 +54,7 @@ exports.handler = function(event, context) {
  *  - date: The time at which to post the tweet (in milliseconds since Jan 1 1970 UTC)
  *  - status: The tweet text
  */
-exports.scheduledTweetPost(event, context) {
+exports.scheduledTweetPost = function(event, context) {
     var twoMinutes = 2*60*1000;
 
     /* GET PARAMETERS */
@@ -63,39 +63,50 @@ exports.scheduledTweetPost(event, context) {
 
     /* VALIDATE PARAMETERS */
     if (!status) { return context.fail(new Error('Invalid or missing "status" parameter.')); }
-    if (!date) { return context.fail(new Error('Invalid or missing "date" parameter.')) }
-    if (date < (new Date() - twoMinutes)) { return context.fail(new Error('Cannot post tweet in the past.'))}
+    if (!date) { return context.fail(new Error('Invalid or missing "date" parameter.')); }
+    if (date < (new Date() - twoMinutes)) { return context.fail(new Error('Invalid date. Cannot post tweet in the past.')); }
 
 
     /* CONSTRUCT DYNAMODB ENTRY */
     var params = {
-      TableName = 'scheduled-tweets',
+      TableName: 'scheduledTweets',
       Item: {
-        'Date': date.toString(),
-        'status': status,
-        'posted': false
-      }
+        // FIXME: Don't hard-code twitterAccount value
+        "twitterAccount": "crc",
+        "postedDate": date,
+        "modifiedDate": new Date().valueOf(),
+        "statusText": status,
+        "isPosted": false
+      },
+      ReturnValues: 'ALL_OLD'
     };
 
     /* PUT ITEM IN DYNAMODB */
     dynamoDbDoc.put(params, function(err, data) {
       if (err) {
-        return context.fail(new Error('Error scheduling tweet: ', JSON.stringify(err, null, 2)));
+        console.error(err)
+        return context.fail(new Error('Error scheduling tweet.'));
       }
 
-      console.info('Tweet scheduled: ', JSON.stringify(data, null, 2));
+      if (data && data.hasOwnProperty('Attributes')) {
+        console.info('Tweet replaced.');
+        console.info('Previous tweet: ')
+        console.info(JSON.stringify(data, null, 2));
+      } else {
+        console.info('New tweet scheduled.')
+      }
       return context.succeed(data);
     })
 };
 
 /**
- * Modifies a previously scheduled but not posted tweet.
+ * Updates a previously scheduled but not posted tweet.
  *
  *  - oldDate: The previously scheduled time at which the tweet was to be posted (milliseconds since Jan 1 1970)
  *  - newDate: The updated time at which to post the tweet (milliseconds since Jan 1 1970 UTC)
  *  - status: The updated tweet text
  */
-exports.scheduledTweetPut(event, context) {
+exports.scheduledTweetPut = function(event, context) {
 
 };
 
@@ -104,6 +115,8 @@ exports.scheduledTweetPut(event, context) {
  *
  *  - date: The time at which the tweet was to be posted (milliseconds since Jan 1 1970)
  */
-exports.scheduledTweetDelete(event, context) {
+exports.scheduledTweetDelete = function(event, context) {
+
+};
 
 };
