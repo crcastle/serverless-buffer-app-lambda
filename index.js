@@ -160,4 +160,13 @@ exports.scheduledTweetList = function(event, context) {
   });
 };
 
+/**
+ * Checks DynamoDB for any tweets that are scheduled to be posted now and posts them to Twitter!
+ */
+exports.scheduledTweetWorker = function(event, context) {
+  // scan dynamodb for tweets need to be posted in the last x minutes
+  // loop through each tweet needing posting
+    // post it
+    // set its post status to true
+    // set its post response from twitter
 };
