@@ -1,5 +1,6 @@
 console.log('Loading function');
 
+var Promise = require('bluebird');
 var Twitter = require('twitter');
 var AWS = require("aws-sdk");
 var dynamoDbDoc = new AWS.DynamoDB.DocumentClient();
@@ -175,11 +176,96 @@ exports.scheduledTweetList = function(event, context) {
 
 /**
  * Checks DynamoDB for any tweets that are scheduled to be posted now and posts them to Twitter!
+ * This is setup to be run every 5 minutes. It looks for tweets to be posted from the past
+ * 7 minutes to the next 1 minute. It filters out tweets with `posted` set to true.
  */
 exports.scheduledTweetWorker = function(event, context) {
-  // scan dynamodb for tweets need to be posted in the last x minutes
-  // loop through each tweet needing posting
-    // post it
-    // set its post status to true
-    // set its post response from twitter
+  /* DEFINE DYNAMODB QUERY */
+  var twitterAccount = 'crc';
+  var now = new Date();
+  var fromDate = +now - (7*60*1000); // now minus 7 minutes
+  var toDate = +now + (1*60*1000); // now plus 1 minute
+
+  var params = {
+    TableName: 'scheduledTweets',
+    KeyConditionExpression: 'twitterAccount = :account AND postedDate BETWEEN :from AND :to',
+    FilterExpression: 'isPosted <> :true',
+    ExpressionAttributeValues: {
+      ':account': twitterAccount,
+      ':from': fromDate,
+      ':to': toDate,
+      ':true': true
+    }
+  };
+
+  /* EXECUTE DYNAMODB QUERY */
+  dynamoDbDoc.query(params, function(err, data) {
+    if (err) {
+      console.error(err)
+      return context.fail(new Error('Error getting scheduled tweets.'));
+    }
+
+    console.info('Worker got ' + data.Count + ' scheduled tweets from DynamoDB.');
+    console.info(data);
+
+    Promise.each(data.Items, function(scheduledTweet) {
+      if (!scheduledTweet.isPosted) {
+        return postAsync(scheduledTweet.statusText)
+          .then(function(tweet) {
+            console.log('Posted tweet: ' + scheduledTweet.statusText);
+            return setTweetAsPosted(scheduledTweet, tweet.id_str);
+          })
+          .catch(function(error) {
+            console.error('Error posting tweet: ' + scheduledTweet.statusText);
+            console.error(error);
+          });
+      }
+    })
+    .then(function() {
+      return context.succeed('Finished posting tweets. No errors.');
+    })
+    .catch(function(error) {
+      return context.fail('Finished posting tweets. See error(s) above.')
+    });
+  });
 };
+
+function postAsync(tweetText) {
+  return new Promise(function(resolve, reject) {
+    client.post('statuses/update', {status: tweetText}, function(error, tweet, response) {
+      if (error) {
+        console.error('Error posting tweet.');
+        reject(error);
+      } else {
+        console.log('Tweet posted.')
+        resolve(tweet);
+      }
+    });
+  });
+}
+
+function setTweetAsPosted(scheduledTweet, twitterId) {
+  /* DEFINE DYNAMODB QUERY */
+  var params = {
+    TableName: 'scheduledTweets',
+    Key: { 'twitterAccount': scheduledTweet.twitterAccount,
+           'postedDate': scheduledTweet.postedDate },
+    UpdateExpression: 'set #a = :boolVal, #b = :twitterId',
+    ExpressionAttributeNames: { '#a': 'isPosted',
+                                '#b': 'twitterId' },
+    ExpressionAttributeValues: { ':boolVal': true,
+                                 ':twitterId': twitterId }
+  };
+
+  /* EXECUTE DYNAMODB QUERY */
+  return new Promise(function(resolve, reject) {
+    dynamoDbDoc.update(params, function(err, data) {
+      if (err) {
+        console.error('Error setting tweet as posted (' + scheduledTweet.statusText + ')');
+        reject(err);
+      } else {
+        resolve(data);
+      }
+    });
+  });
+}
