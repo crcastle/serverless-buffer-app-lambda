@@ -122,30 +122,43 @@ exports.scheduledTweetDelete = function(event, context) {
 /**
  * Returns all scheduled tweets to post with a specified time range
  *
+ *  Required:
+ *  - account: Handle for the twitter account (without @)
+ *
+ *  Optional:
  *  - fromDate: The post date after which to return scheduled tweets (milliseconds since Jan 1 1970)
  *  - toDate: The post date before which to return scheduled tweets (milliseconds since Jan 1 1970)
  */
 exports.scheduledTweetList = function(event, context) {
   /* GET PARAMETERS */
-  var fromDate = parseInt(event.fromDate);
-  var toDate = parseInt(event.toDate);
   var account = event.account;
+  var fromDate = parseInt(event.fromDate) || null;
+  var toDate = parseInt(event.toDate) || null;
 
   /* VALIDATE PARAMETERS */
-  if (!fromDate) { return context.fail(new Error('Invalid or missing "fromDate" parameter.')); }
-  if (!toDate) { return context.fail(new Error('Invalid or missing "toDate" parameter.')); }
-  if (toDate < fromDate) { return context.fail(new Error('"toDate" cannot be before "fromDate".')); }
+  if (fromDate && toDate && toDate < fromDate) { return context.fail(new Error('"toDate" cannot be before "fromDate".')); }
   if (!account) { return context.fail(new Error('Invalid or missing "account" parameter.')); }
 
-  /* CONSTRUCT DYNAMODB ENTRY */
+  /* CONSTRUCT DATE RANGE QUERY */
+  var dateRangeQuery = "";
+  var expAttrVals = { ':account': account };
+  if (fromDate && toDate) {
+    dateRangeQuery = " AND postedDate BETWEEN :from AND :to";
+    expAttrVals[':from'] = fromDate;
+    expAttrVals[':to'] = toDate;
+  } else if (fromDate) {
+    dateRangeQuery = " AND postedDate GT :from";
+    expAttrVals[':from'] = fromDate;
+  } else if (toDate) {
+    dateRangeQuery = " AND postedDate LT :to";
+    expAttrVals[':to'] = toDate;
+  }
+
+  /* CONSTRUCT DYNAMODB QUERY */
   var params = {
     TableName: 'scheduledTweets',
-    KeyConditionExpression: 'twitterAccount = :account AND postedDate BETWEEN :from AND :to',
-    ExpressionAttributeValues: {
-      ':account': account,
-      ':from': fromDate,
-      ':to': toDate
-    }
+    KeyConditionExpression: 'twitterAccount = :account' + dateRangeQuery,
+    ExpressionAttributeValues: expAttrVals
   };
 
   /* EXECUTE DYNAMODB QUERY */
@@ -155,7 +168,7 @@ exports.scheduledTweetList = function(event, context) {
       return context.fail(new Error('Error getting scheduled tweets.'));
     }
 
-    console.info('Got list of scheduled tweets from DynamoDB.')
+    console.info('Got ' + data.Count + ' scheduled tweets from DynamoDB.')
     return context.succeed(data);
   });
 };
