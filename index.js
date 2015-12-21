@@ -2,7 +2,7 @@ console.log('Loading function');
 
 var Promise = require('bluebird');
 var Twitter = require('twitter');
-var AWS = require("aws-sdk");
+var AWS = require('aws-sdk');
 var dynamoDbDoc = new AWS.DynamoDB.DocumentClient();
 
 var config = require('./config.json').development;
@@ -10,7 +10,7 @@ var client = new Twitter({
   consumer_key: config.consumer_key,
   consumer_secret: config.consumer_secret,
   access_token_key: config.access_token_key,
-  access_token_secret: config.access_token_secret,
+  access_token_secret: config.access_token_secret
 });
 
 /**
@@ -19,34 +19,34 @@ var client = new Twitter({
  *   - operation: one of the operations in the switch statement below
  */
 exports.handler = function(event, context) {
-    console.log('Received event:', JSON.stringify(event, null, 2));
+  console.log('Received event:', JSON.stringify(event, null, 2));
 
-    var operation = event.operation;
+  var operation = event.operation;
 
-    switch (operation) {
-        case 'create':
-            var status = event.status;
-            if (!status) {
-              return context.fail(new Error('Invalid or missing "status" parameter.'));
-            }
-
-            client.post('statuses/update', {status: status},  function(error, tweet, response){
-              if(error) {
-                console.error('Error posting tweet');
-                console.error(error);
-                return context.fail(new Error('Error posting tweet: ' + error));
-              }
-
-              console.info('Tweet posted');
-              console.info(tweet);  // Tweet body.
-              return context.succeed(tweet);
-            });
-            break;
-        case 'ping':
-            return context.succeed('pong');
-        default:
-            context.fail(new Error('Unrecognized operation "' + operation + '"'));
+  switch (operation) {
+  case 'create':
+    var status = event.status;
+    if (!status) {
+      return context.fail(new Error('Invalid or missing "status" parameter.'));
     }
+
+    client.post('statuses/update', {status: status},  function(error, tweet/*, response*/){
+      if(error) {
+        console.error('Error posting tweet');
+        console.error(error);
+        return context.fail(new Error('Error posting tweet: ' + error));
+      }
+
+      console.info('Tweet posted');
+      console.info(tweet);  // Tweet body.
+      return context.succeed(tweet);
+    });
+    break;
+  case 'ping':
+    return context.succeed('pong');
+  default:
+    context.fail(new Error('Unrecognized operation "' + operation + '"'));
+  }
 };
 
 /**
@@ -56,48 +56,48 @@ exports.handler = function(event, context) {
  *  - status: The tweet text
  */
 exports.scheduledTweetPost = function(event, context) {
-    var twoMinutes = 2*60*1000;
+  var twoMinutes = 2*60*1000;
 
-    /* GET PARAMETERS */
-    var date = parseInt(event.date);
-    var status = event.status;
+  /* GET PARAMETERS */
+  var date = parseInt(event.date);
+  var status = event.status;
 
-    /* VALIDATE PARAMETERS */
-    if (!status) { return context.fail(new Error('Invalid or missing "status" parameter.')); }
-    if (!date) { return context.fail(new Error('Invalid or missing "date" parameter.')); }
-    if (date < (new Date() - twoMinutes)) { return context.fail(new Error('Invalid date. Cannot post tweet in the past.')); }
+  /* VALIDATE PARAMETERS */
+  if (!status) { return context.fail(new Error('Invalid or missing "status" parameter.')); }
+  if (!date) { return context.fail(new Error('Invalid or missing "date" parameter.')); }
+  if (date < (new Date() - twoMinutes)) { return context.fail(new Error('Invalid date. Cannot post tweet in the past.')); }
 
 
-    /* CONSTRUCT DYNAMODB ENTRY */
-    var params = {
-      TableName: 'scheduledTweets',
-      Item: {
-        // FIXME: Don't hard-code twitterAccount value
-        "twitterAccount": "crc",
-        "postedDate": date,
-        "modifiedDate": new Date().valueOf(),
-        "statusText": status,
-        "isPosted": false
-      },
-      ReturnValues: 'ALL_OLD'
-    };
+  /* CONSTRUCT DYNAMODB ENTRY */
+  var params = {
+    TableName: 'scheduledTweets',
+    Item: {
+      // FIXME: Don't hard-code twitterAccount value
+      'twitterAccount': 'crc',
+      'postedDate': date,
+      'modifiedDate': new Date().valueOf(),
+      'statusText': status,
+      'isPosted': false
+    },
+    ReturnValues: 'ALL_OLD'
+  };
 
-    /* PUT ITEM IN DYNAMODB */
-    dynamoDbDoc.put(params, function(err, data) {
-      if (err) {
-        console.error(err)
-        return context.fail(new Error('Error scheduling tweet.'));
-      }
+  /* PUT ITEM IN DYNAMODB */
+  dynamoDbDoc.put(params, function(err, data) {
+    if (err) {
+      console.error(err);
+      return context.fail(new Error('Error scheduling tweet.'));
+    }
 
-      if (data && data.hasOwnProperty('Attributes')) {
-        console.info('Tweet replaced.');
-        console.info('Previous tweet: ')
-        console.info(JSON.stringify(data, null, 2));
-      } else {
-        console.info('New tweet scheduled.')
-      }
-      return context.succeed(data);
-    })
+    if (data && data.hasOwnProperty('Attributes')) {
+      console.info('Tweet replaced.');
+      console.info('Previous tweet: ');
+      console.info(JSON.stringify(data, null, 2));
+    } else {
+      console.info('New tweet scheduled.');
+    }
+    return context.succeed(data);
+  });
 };
 
 /**
@@ -107,7 +107,7 @@ exports.scheduledTweetPost = function(event, context) {
  *  - newDate: The updated time at which to post the tweet (milliseconds since Jan 1 1970 UTC)
  *  - status: The updated tweet text
  */
-exports.scheduledTweetPut = function(event, context) {
+exports.scheduledTweetPut = function(/*event, context*/) {
 
 };
 
@@ -116,7 +116,7 @@ exports.scheduledTweetPut = function(event, context) {
  *
  *  - date: The time at which the tweet was to be posted (milliseconds since Jan 1 1970)
  */
-exports.scheduledTweetDelete = function(event, context) {
+exports.scheduledTweetDelete = function(/*event, context*/) {
 
 };
 
@@ -141,17 +141,17 @@ exports.scheduledTweetList = function(event, context) {
   if (!account) { return context.fail(new Error('Invalid or missing "account" parameter.')); }
 
   /* CONSTRUCT DATE RANGE QUERY */
-  var dateRangeQuery = "";
+  var dateRangeQuery = '';
   var expAttrVals = { ':account': account };
   if (fromDate && toDate) {
-    dateRangeQuery = " AND postedDate BETWEEN :from AND :to";
+    dateRangeQuery = ' AND postedDate BETWEEN :from AND :to';
     expAttrVals[':from'] = fromDate;
     expAttrVals[':to'] = toDate;
   } else if (fromDate) {
-    dateRangeQuery = " AND postedDate GT :from";
+    dateRangeQuery = ' AND postedDate GT :from';
     expAttrVals[':from'] = fromDate;
   } else if (toDate) {
-    dateRangeQuery = " AND postedDate LT :to";
+    dateRangeQuery = ' AND postedDate LT :to';
     expAttrVals[':to'] = toDate;
   }
 
@@ -165,11 +165,11 @@ exports.scheduledTweetList = function(event, context) {
   /* EXECUTE DYNAMODB QUERY */
   dynamoDbDoc.query(params, function(err, data) {
     if (err) {
-      console.error(err)
+      console.error(err);
       return context.fail(new Error('Error getting scheduled tweets.'));
     }
 
-    console.info('Got ' + data.Count + ' scheduled tweets from DynamoDB.')
+    console.info('Got ' + data.Count + ' scheduled tweets from DynamoDB.');
     return context.succeed(data);
   });
 };
@@ -201,7 +201,7 @@ exports.scheduledTweetWorker = function(event, context) {
   /* EXECUTE DYNAMODB QUERY */
   dynamoDbDoc.query(params, function(err, data) {
     if (err) {
-      console.error(err)
+      console.error(err);
       return context.fail(new Error('Error getting scheduled tweets.'));
     }
 
@@ -224,20 +224,20 @@ exports.scheduledTweetWorker = function(event, context) {
     .then(function() {
       return context.succeed('Finished posting tweets. No errors.');
     })
-    .catch(function(error) {
-      return context.fail('Finished posting tweets. See error(s) above.')
+    .catch(function(/*error*/) {
+      return context.fail('Finished posting tweets. See error(s) above.');
     });
   });
 };
 
 function postAsync(tweetText) {
   return new Promise(function(resolve, reject) {
-    client.post('statuses/update', {status: tweetText}, function(error, tweet, response) {
+    client.post('statuses/update', {status: tweetText}, function(error, tweet/*, response*/) {
       if (error) {
         console.error('Error posting tweet.');
         reject(error);
       } else {
-        console.log('Tweet posted.')
+        console.log('Tweet posted.');
         resolve(tweet);
       }
     });
