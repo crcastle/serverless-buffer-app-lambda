@@ -159,6 +159,7 @@ exports.scheduledTweetList = function(event, context) {
   var params = {
     TableName: 'scheduledTweets',
     KeyConditionExpression: 'twitterAccount = :account' + dateRangeQuery,
+    FilterExpression: 'isPosted <> :true',
     ExpressionAttributeValues: expAttrVals
   };
 
