@@ -1,6 +1,6 @@
 # Serverless Buffer App Lambda Functions
 
-This repo supports the [Serverless Buffer App GUI](https://github.com/crcastle/serverless-buffer-app/gui).  It contains the [AWS Lambda](https://aws.amazon.com/lambda/) functions that the GUI calls.
+This repo supports the [Serverless Buffer App GUI](https://github.com/crcastle/serverless-buffer-app-gui).  It contains the [AWS Lambda](https://aws.amazon.com/lambda/) functions that the GUI calls.
 
 You could use this by itself, but you'd have to figure out your own way to make the HTTP API requests.
 
