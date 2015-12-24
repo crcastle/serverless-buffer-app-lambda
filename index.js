@@ -142,7 +142,7 @@ exports.scheduledTweetList = function(event, context) {
 
   /* CONSTRUCT DATE RANGE QUERY */
   var dateRangeQuery = '';
-  var expAttrVals = { ':account': account };
+  var expAttrVals = { ':account': account, ':true': true };
   if (fromDate && toDate) {
     dateRangeQuery = ' AND postedDate BETWEEN :from AND :to';
     expAttrVals[':from'] = fromDate;
