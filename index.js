@@ -5,7 +5,7 @@ var Twitter = require('twitter');
 var AWS = require('aws-sdk');
 var dynamoDbDoc = new AWS.DynamoDB.DocumentClient();
 
-var config = require('./config.json').development;
+var config = require('./config.json').production;
 var client = new Twitter({
   consumer_key: config.consumer_key,
   consumer_secret: config.consumer_secret,
